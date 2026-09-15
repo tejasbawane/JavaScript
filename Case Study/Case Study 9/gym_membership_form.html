@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Membership Form</title>
+    <style>
+        /* -------------------------------------------------------------
+           THEME VARIABLES
+           ------------------------------------------------------------- */
+        :root {
+            --bg-color: #f4f4f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --label-color: #555555;
+            --input-bg: #ffffff;
+            --input-border: #cccccc;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --btn-bg: #28a745;
+            --btn-hover: #218838;
+            --theme-btn-bg: transparent;
+            --theme-btn-border: #aaaaaa;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --label-color: #b0b0b0;
+            --input-bg: #2b2b2b;
+            --input-border: #444444;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --btn-bg: #2ed573;
+            --btn-hover: #26af5f;
+            --theme-btn-bg: #2b2b2b;
+            --theme-btn-border: #555555;
+        }
+
+        /* Detect OS Dark Mode preference automatically */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-color: #121212;
+                --card-bg: #1e1e1e;
+                --text-color: #e0e0e0;
+                --label-color: #b0b0b0;
+                --input-bg: #2b2b2b;
+                --input-border: #444444;
+                --shadow-color: rgba(0, 0, 0, 0.5);
+                --btn-bg: #2ed573;
+                --btn-hover: #26af5f;
+                --theme-btn-bg: #2b2b2b;
+                --theme-btn-border: #555555;
+            }
+        }
+
+        /* -------------------------------------------------------------
+           BASE LAYOUT STYLES
+           ------------------------------------------------------------- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .form-container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            width: 100%;
+            max-width: 420px;
+            transition: background-color 0.3s ease;
+        }
+
+        .theme-toggle-btn {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--theme-btn-bg);
+            color: var(--text-color);
+            border: 1px solid var(--theme-btn-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .form-container h2 {
+            margin-bottom: 20px;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--label-color);
+        }
+
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--input-border);
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .form-group input.invalid, 
+        .form-group select.invalid {
+            border-color: #e74c3c;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            display: block;
+            min-height: 18px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--btn-bg);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--btn-hover);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <!-- Theme Toggle Button -->
+        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+            Switch to Dark Theme
+        </button>
+
+        <h2>Gym Membership Form</h2>
+        <form id="gymForm" novalidate>
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" placeholder="Enter full name">
+                <span id="nameError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="Enter email address">
+                <span id="emailError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="mobile">Mobile Number</label>
+                <input type="tel" id="mobile" placeholder="Enter 10-digit mobile number">
+                <span id="mobileError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" id="age" placeholder="Enter age (16-90)">
+                <span id="ageError" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="plan">Membership Plan</label>
+                <select id="plan">
+                    <option value="">Select a plan</option>
+                    <option value="monthly">Monthly Pass</option>
+                    <option value="quarterly">Quarterly Pass (3 Months)</option>
+                    <option value="annual">Annual Membership (1 Year)</option>
+                </select>
+                <span id="planError" class="error-message"></span>
+            </div>
+
+            <button type="submit" class="submit-btn">Register Now</button>
+        </form>
+    </div>
+
+    <script>
+        // -------------------------------------------------------------
+        // THEME TOGGLE LOGIC
+        // -------------------------------------------------------------
+        function toggleTheme() {
+            const root = document.documentElement;
+            const themeBtn = document.getElementById("themeToggleBtn");
+            const currentTheme = root.getAttribute("data-theme");
+
+            if (currentTheme === "dark") {
+                root.setAttribute("data-theme", "light");
+                themeBtn.innerText = "Switch to Dark Theme";
+            } else {
+                root.setAttribute("data-theme", "dark");
+                themeBtn.innerText = "Switch to Light Theme";
+            }
+        }
+
+        // Detect default OS theme setting on page load
+        window.addEventListener("DOMContentLoaded", () => {
+            const isDarkPreferred = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const themeBtn = document.getElementById("themeToggleBtn");
+
+            if (isDarkPreferred) {
+                themeBtn.innerText = "Switch to Light Theme";
+            }
+        });
+
+        // -------------------------------------------------------------
+        // FORM VALIDATION LOGIC
+        // -------------------------------------------------------------
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const mobileInput = document.getElementById("mobile");
+        const ageInput = document.getElementById("age");
+        const planSelect = document.getElementById("plan");
+        const gymForm = document.getElementById("gymForm");
+
+        const nameError = document.getElementById("nameError");
+        const emailError = document.getElementById("emailError");
+        const mobileError = document.getElementById("mobileError");
+        const ageError = document.getElementById("ageError");
+        const planError = document.getElementById("planError");
+
+        function setStatus(input, errorElement, isInvalid, message = "") {
+            errorElement.textContent = isInvalid ? message : "";
+            input.classList.toggle("invalid", isInvalid);
+        }
+
+        function validateName() {
+            const value = nameInput.value.trim();
+            const isInvalid = value.length < 3;
+            setStatus(nameInput, nameError, isInvalid, "Name must be at least 3 characters");
+            return !isInvalid;
+        }
+
+        function validateEmail() {
+            const value = emailInput.value.trim();
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+            const isInvalid = !emailPattern.test(value);
+            setStatus(emailInput, emailError, isInvalid, "Enter a valid email address");
+            return !isInvalid;
+        }
+
+        function validateMobile() {
+            const value = mobileInput.value.trim();
+            const mobilePattern = /^[0-9]{10}$/;
+            const isInvalid = !mobilePattern.test(value);
+            setStatus(mobileInput, mobileError, isInvalid, "Enter a valid 10-digit mobile number");
+            return !isInvalid;
+        }
+
+        function validateAge() {
+            const value = parseInt(ageInput.value, 10);
+            const isInvalid = isNaN(value) || value < 16 || value > 90;
+            setStatus(ageInput, ageError, isInvalid, "Age must be between 16 and 90");
+            return !isInvalid;
+        }
+
+        function validatePlan() {
+            const isInvalid = planSelect.value === "";
+            setStatus(planSelect, planError, isInvalid, "Please select a membership plan");
+            return !isInvalid;
+        }
+
+        // Attach event listeners for real-time validation
+        nameInput.addEventListener("input", validateName);
+        emailInput.addEventListener("input", validateEmail);
+        mobileInput.addEventListener("input", validateMobile);
+        ageInput.addEventListener("input", validateAge);
+        planSelect.addEventListener("change", validatePlan);
+
+        // Submit listener
+        gymForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const isNameValid = validateName();
+            const isEmailValid = validateEmail();
+            const isMobileValid = validateMobile();
+            const isAgeValid = validateAge();
+            const isPlanValid = validatePlan();
+
+            if (isNameValid && isEmailValid && isMobileValid && isAgeValid && isPlanValid) {
+                alert("Form submitted successfully!");
+                gymForm.reset();
+            }
+        });
+    </script>
+
+</body>
+</html>
