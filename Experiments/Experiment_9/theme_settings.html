@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Settings</title>
+  <style>
+    /* Default Page Layout */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Container Card */
+    .theme-card {
+      border: 2px solid #555;
+      padding: 30px;
+      width: 320px;
+      text-align: center;
+      border-radius: 4px;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    /* Light Theme Styling */
+    body.light-theme {
+      background-color: #f4f4f9;
+      color: #000000;
+    }
+    body.light-theme .theme-card {
+      background-color: #ffffff;
+      border-color: #888;
+    }
+
+    /* Dark Theme Styling */
+    body.dark-theme {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    body.dark-theme .theme-card {
+      background-color: #38322e;
+      border-color: #666;
+    }
+
+    /* Form Controls & Buttons */
+    select {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      padding: 4px 8px;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      border: 1px solid #777;
+      border-radius: 3px;
+      background-color: #efefef;
+      color: #000;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    .clear-btn {
+      margin-bottom: 20px;
+    }
+
+    .status-msg {
+      font-size: 14px;
+      font-weight: bold;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body class="light-theme">
+
+  <div class="theme-card">
+    <h2>Theme Settings</h2>
+    
+    <label for="themeSelect">Select your preferred theme:</label><br>
+    <select id="themeSelect">
+      <option value="light-theme">Light</option>
+      <option value="dark-theme">Dark</option>
+    </select>
+
+    <div class="button-group">
+      <button onclick="saveLocalStorage()">Save using localStorage</button>
+      <button onclick="saveSessionStorage()">Save using sessionStorage</button>
+    </div>
+
+    <button class="clear-btn" onclick="clearPreferences()">Clear Preferences</button>
+
+    <div class="status-msg" id="statusMessage"></div>
+  </div>
+
+  <script>
+    const themeSelect = document.getElementById('themeSelect');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // 1. Change theme immediately when dropdown option is selected
+    themeSelect.addEventListener('change', (e) => {
+      document.body.className = e.target.value;
+    });
+
+    // 2. Save preference to localStorage
+    function saveLocalStorage() {
+      const selectedTheme = themeSelect.value;
+      localStorage.setItem('preferredTheme', selectedTheme);
+      // Remove any sessionStorage theme to avoid conflicts
+      sessionStorage.removeItem('preferredTheme'); 
+      
+      document.body.className = selectedTheme;
+      statusMessage.innerText = 'Theme saved using localStorage.';
+    }
+
+    // 3. Save preference to sessionStorage
+    function saveSessionStorage() {
+      const selectedTheme = themeSelect.value;
+      sessionStorage.setItem('preferredTheme', selectedTheme);
+      // Remove any localStorage theme to avoid conflicts
+      localStorage.removeItem('preferredTheme'); 
+      
+      document.body.className = selectedTheme;
+      statusMessage.innerText = 'Theme saved using sessionStorage.';
+    }
+
+    // 4. Clear all saved preferences
+    function clearPreferences() {
+      localStorage.removeItem('preferredTheme');
+      sessionStorage.removeItem('preferredTheme');
+      
+      // Reset back to default (Light)
+      document.body.className = 'light-theme';
+      themeSelect.value = 'light-theme';
+      statusMessage.innerText = 'Preferences cleared.';
+    }
+
+    // 5. Load saved theme when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      const localTheme = localStorage.getItem('preferredTheme');
+      const sessionTheme = sessionStorage.getItem('preferredTheme');
+
+      if (localTheme) {
+        document.body.className = localTheme;
+        themeSelect.value = localTheme;
+        statusMessage.innerText = 'Theme loaded from localStorage.';
+      } else if (sessionTheme) {
+        document.body.className = sessionTheme;
+        themeSelect.value = sessionTheme;
+        statusMessage.innerText = 'Theme loaded from sessionStorage.';
+      }
+    });
+  </script>
+
+</body>
+</html>
