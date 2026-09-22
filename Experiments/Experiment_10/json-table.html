@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Indian Student Directory</title>
+  <!-- jQuery CDN included for $.getJSON functionality -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    button { padding: 8px 16px; margin-right: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h2>Indian Student Directory</h2>
+  <button onclick="loadWithFetch()">Load using fetch()</button>
+  <button onclick="loadWithJQuery()">Load using $.getJSON()</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Student ID</th>
+        <th>Name</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- Dynamic rows load here -->
+    </tbody>
+  </table>
+
+  <script>
+    // Indian student data with IDs starting from 101
+    const studentData = [
+      { id: 101, name: "Aarav Sharma", email: "aarav.sharma@example.in" },
+      { id: 102, name: "Ananya Patel", email: "ananya.patel@example.in" },
+      { id: 103, name: "Rohan Verma", email: "rohan.verma@example.in" },
+      { id: 104, name: "Priya Iyer", email: "priya.iyer@example.in" },
+      { id: 105, name: "Aditya Kulkarni", email: "aditya.kulkarni@example.in" },
+      { id: 106, name: "Diya Nair", email: "diya.nair@example.in" }
+    ];
+
+    // Helper function to build and inject rows
+    function renderRows(data) {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = ''; // Clear table
+      
+      data.forEach(student => {
+        const row = `<tr>
+          <td>${student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.email}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    // 1. fetch() simulation using a Promise
+    function loadWithFetch() {
+      // Simulating a fetch API request with a resolved Promise
+      Promise.resolve(studentData)
+        .then(data => renderRows(data))
+        .catch(err => console.error('Fetch error:', err));
+    }
+
+    // 2. jQuery simulation using Deferred object
+    function loadWithJQuery() {
+      // Simulating $.getJSON with a jQuery Deferred object
+      $.Deferred().resolve(studentData)
+        .done(function(data) {
+          renderRows(data);
+        })
+        .fail(function(err) {
+          console.error('jQuery error:', err);
+        });
+    }
+  </script>
+
+</body>
+</html>
