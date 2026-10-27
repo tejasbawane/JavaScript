@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Event Hub - Event Registration Portal</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jQuery 3.7.1 CDN -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glass-card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-hover:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.3);
+    }
+    .glass-nav {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulse-ring {
+      to {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+    }
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      margin-top: 10px;
+      border-radius: 12px;
+      background: #1e293b;
+      color: #fff;
+      border-left: 4px solid #6366f1;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      animation: slideInRight 0.3s ease-out forwards;
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-pass, #printable-pass * {
+        visibility: visible;
+      }
+      #printable-pass {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000 !important;
+        background: #fff !important;
+      }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-slate-100 flex flex-col min-h-screen">
+
+  <header class="glass-nav sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" id="logo-btn">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-graduation-cap text-xl text-white"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-white block leading-none">Campus<span class="text-indigo-400">Hub</span></span>
+          <span class="text-xs text-slate-400 font-medium">Events & Ticket Portal</span>
+        </div>
+      </div>
+
+      <!-- Live Activity Ticker -->
+      <div class="hidden lg:flex items-center space-x-3 glass-card px-4 py-2 rounded-full border border-slate-700/60 max-w-md overflow-hidden">
+        <span class="pulse-dot"></span>
+        <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">LIVE</span>
+        <div id="live-ticker-text" class="text-xs text-slate-300 truncate transition-all duration-500">
+          Syncing campus events...
+        </div>
+      </div>
+
+      <!-- Navigation & Post Event Action -->
+      <div class="flex items-center space-x-3">
+        <button id="nav-events-btn" class="nav-tab active-tab bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-indigo-500 transition">
+          <i class="fa-solid fa-compass"></i>
+          <span>Discover</span>
+        </button>
+
+        <button id="nav-tickets-btn" class="nav-tab text-slate-300 hover:bg-slate-800 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition relative">
+          <i class="fa-solid fa-ticket"></i>
+          <span>My Wallet</span>
+          <span id="ticket-badge-count" class="hidden absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+        </button>
+
+        <button id="open-add-event-btn" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-purple-500/20 flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i>
+          <span class="hidden sm:inline">Post Event</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="glass-card p-5 rounded-2xl flex items-center space-x-4 border-l-4 border-l-indigo-500">
+        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-xl">
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">Total Events</p>
+          <h3 id="stat-total-events" class="text-2xl font-extrabold text-white">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl flex items-center space-x-4 border-l-4 border-l-emerald-500">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl">
+          <i class="fa-solid fa-check-circle"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">My Registrations</p>
+          <h3 id="stat-my-registrations" class="text-2xl font-extrabold text-white">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl flex items-center space-x-4 border-l-4 border-l-amber-500">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl">
+          <i class="fa-solid fa-chair"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">Seats Remaining</p>
+          <h3 id="stat-seats-left" class="text-2xl font-extrabold text-white">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl flex items-center space-x-4 border-l-4 border-l-pink-500">
+        <div class="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-400 text-xl">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">High Demand</p>
+          <h3 id="stat-today-events" class="text-2xl font-extrabold text-white">0</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: DISCOVER EVENTS TAB -->
+    <section id="events-view" class="space-y-6">
+      <div class="glass-card p-4 sm:p-6 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full md:w-96">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="event-search-input" placeholder="Search by title, department, venue..." 
+            class="w-full bg-slate-900/80 text-white pl-11 pr-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-sm transition">
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none" id="category-filter-group">
+          <button data-category="All" class="filter-btn active bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+            All Events
+          </button>
+          <button data-category="Tech" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+            💻 Tech & AI
+          </button>
+          <button data-category="Cultural" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+            🎨 Cultural
+          </button>
+          <button data-category="Sports" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+            🏆 Sports
+          </button>
+          <button data-category="Workshop" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition">
+            🧠 Workshops
+          </button>
+        </div>
+
+        <button id="refresh-ajax-btn" title="Sync events catalog" class="hidden sm:flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-medium border border-slate-700 transition">
+          <i class="fa-solid fa-rotate text-indigo-400"></i>
+          <span>Sync</span>
+        </button>
+      </div>
+
+      <div id="events-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+      <div id="no-events-state" class="hidden glass-card rounded-2xl p-12 text-center max-w-md mx-auto my-12">
+        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 text-2xl">
+          <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1">No Matching Events Found</h3>
+        <p class="text-xs text-slate-400 mb-6">Try tweaking your search term or category filters.</p>
+        <button id="reset-filters-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition">
+          Reset All Filters
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 2: TICKET WALLET TAB -->
+    <section id="wallet-view" class="hidden space-y-6">
+      <div>
+        <h2 class="text-2xl font-bold text-white">My Event Passes</h2>
+        <p class="text-xs text-slate-400">Manage your active registrations, view QR passes, or cancel bookings.</p>
+      </div>
+
+      <div id="wallet-tickets-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+      <div id="empty-wallet-state" class="hidden glass-card rounded-2xl p-12 text-center max-w-md mx-auto my-12">
+        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 text-2xl">
+          <i class="fa-solid fa-ticket-simple"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1">Your Wallet is Empty</h3>
+        <p class="text-xs text-slate-400 mb-6">You haven't registered for any upcoming campus events yet.</p>
+        <button id="browse-events-redirect-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition">
+          Explore Campus Events
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: EVENT REGISTRATION FORM -->
+  <div id="registration-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="glass-card max-w-lg w-full rounded-2xl border border-slate-700 shadow-2xl overflow-hidden my-8 transform transition-all duration-300 scale-95 opacity-0 modal-box">
+      <div class="p-6 border-b border-slate-800 flex items-start justify-between bg-gradient-to-r from-indigo-900/50 to-slate-900">
+        <div>
+          <span id="reg-modal-category" class="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Category</span>
+          <h3 id="reg-modal-title" class="text-xl font-bold text-white mt-2">Event Title</h3>
+          <p id="reg-modal-sub" class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+            <span><i class="fa-regular fa-clock text-indigo-400"></i> <span id="reg-modal-time">Time</span></span>
+            <span>•</span>
+            <span><i class="fa-solid fa-location-dot text-indigo-400"></i> <span id="reg-modal-venue">Venue</span></span>
+          </p>
+        </div>
+        <button id="close-reg-modal" class="text-slate-400 hover:text-white text-lg p-1 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="event-registration-form" class="p-6 space-y-4">
+        <input type="hidden" id="reg-event-id" name="eventId">
+
+        <div class="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-between text-xs">
+          <span class="text-indigo-300 font-medium">Seats Left for this session:</span>
+          <span id="reg-modal-seats-badge" class="font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-full">0 Seats</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Full Student Name *</label>
+          <input type="text" id="reg-student-name" required placeholder="e.g., Alex Mercer"
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+          <span class="form-error text-[11px] text-pink-400 hidden">Please enter your full name.</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Student ID *</label>
+            <input type="text" id="reg-student-id" required placeholder="CS2026-101"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+            <span class="form-error text-[11px] text-pink-400 hidden">Valid ID required (e.g. CS2026-101).</span>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Campus Email *</label>
+            <input type="email" id="reg-student-email" required placeholder="student@campus.edu"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+            <span class="form-error text-[11px] text-pink-400 hidden">Valid campus email required.</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Department *</label>
+            <select id="reg-department" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+              <option value="">Select Department</option>
+              <option value="Computer Science">Computer Science & AI</option>
+              <option value="Electrical Eng">Electrical Engineering</option>
+              <option value="Mechanical Eng">Mechanical Engineering</option>
+              <option value="Business Admin">Business Administration</option>
+              <option value="Fine Arts">Arts & Design</option>
+            </select>
+            <span class="form-error text-[11px] text-pink-400 hidden">Select department.</span>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Academic Year *</label>
+            <select id="reg-year" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+              <option value="">Select Year</option>
+              <option value="1st Year">1st Year (Freshman)</option>
+              <option value="2nd Year">2nd Year (Sophomore)</option>
+              <option value="3rd Year">3rd Year (Junior)</option>
+              <option value="4th Year">4th Year (Senior)</option>
+              <option value="Postgrad">Postgraduate</option>
+            </select>
+            <span class="form-error text-[11px] text-pink-400 hidden">Select academic year.</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Dietary Preference</label>
+            <select id="reg-meal" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="Regular">Regular Meal</option>
+              <option value="Vegetarian">Vegetarian</option>
+              <option value="Vegan">Vegan</option>
+              <option value="None">None Required</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Ticket / Seat Type</label>
+            <select id="reg-tshirt" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="Standard Access">Standard Access Pass</option>
+              <option value="VIP Access">VIP/Front Row Access</option>
+              <option value="Participant Pass">Active Participant Pass</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-800">
+          <button type="button" id="cancel-reg-btn" class="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition">Cancel</button>
+          <button type="submit" id="submit-reg-btn" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition">
+            <i class="fa-solid fa-check"></i>
+            <span>Confirm & Get Pass</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: DIGITAL TICKET PASS PREVIEW -->
+  <div id="pass-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="max-w-md w-full bg-slate-900 rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden transform transition-all duration-300 modal-box">
+      <div id="printable-pass" class="p-6 bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-900 text-white relative">
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800 mt-2">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-graduation-cap text-indigo-400 text-xl"></i>
+            <span class="font-bold text-sm tracking-wide">CAMPUS EVENT PASS</span>
+          </div>
+          <span id="pass-status-badge" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">CONFIRMED</span>
+        </div>
+
+        <div class="py-5 text-center">
+          <span id="pass-event-category" class="text-[10px] font-bold text-indigo-400 tracking-widest uppercase bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">TECH SYMPOSIUM</span>
+          <h2 id="pass-event-title" class="text-xl font-black text-white mt-2 leading-tight">AI & Machine Learning Conference</h2>
+          <p id="pass-event-time" class="text-xs text-slate-300 mt-1"><i class="fa-regular fa-calendar-check text-indigo-400 mr-1"></i> Oct 15, 2026 • 10:00 AM</p>
+          <p id="pass-event-venue" class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> Main Auditorium, Science Block</p>
+        </div>
+
+        <div class="bg-slate-800/80 rounded-2xl p-4 space-y-2 border border-slate-700/60 text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Attendee:</span>
+            <span id="pass-attendee-name" class="font-bold text-white">Alex Mercer</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Student ID:</span>
+            <span id="pass-attendee-id" class="font-mono text-indigo-300">CS2026-992</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Dept & Year:</span>
+            <span id="pass-attendee-dept" class="text-slate-200">Computer Science (3rd Yr)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Registration Code:</span>
+            <span id="pass-reg-code" class="font-mono text-xs text-amber-400 font-bold">REG-883921</span>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-dashed border-slate-700 flex flex-col items-center justify-center">
+          <div class="bg-white p-3 rounded-2xl shadow-inner mb-2 inline-block">
+            <svg id="pass-qr-svg" class="w-28 h-28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="100" height="100" fill="white"/>
+              <path d="M0 0h35v35H0zM5 5v25h25V5zm5 5h15v15H10zM65 0h35v35H65zM70 5v25h25V5zm5 5h15v15H75zM0 65h35v35H0zM5 70v25h25V70zm5 5h15v15H10z" fill="#0f172a"/>
+              <rect x="45" y="10" width="10" height="15" fill="#0f172a"/>
+              <rect x="40" y="40" width="20" height="20" fill="#4f46e5"/>
+              <rect x="70" y="70" width="15" height="15" fill="#0f172a"/>
+              <rect x="50" y="75" width="10" height="10" fill="#0f172a"/>
+              <rect x="75" y="45" width="15" height="10" fill="#0f172a"/>
+            </svg>
+          </div>
+          <p class="text-[10px] text-slate-400 font-mono">Present this QR code at venue entrance</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-950 flex items-center justify-between gap-3 border-t border-slate-800">
+        <button id="print-pass-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-print"></i>
+          <span>Print Pass</span>
+        </button>
+        <button id="close-pass-modal" class="px-5 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-semibold transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CREATE NEW CAMPUS EVENT -->
+  <div id="add-event-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="glass-card max-w-lg w-full rounded-2xl border border-slate-700 shadow-2xl overflow-hidden my-8 transform transition-all duration-300 scale-95 opacity-0 modal-box">
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-bullhorn text-indigo-400"></i>
+          <span>Post New Campus Event</span>
+        </h3>
+        <button id="close-add-modal" class="text-slate-400 hover:text-white text-lg p-1 rounded-lg transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="add-event-form" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Event Title *</label>
+          <input type="text" id="new-event-title" required placeholder="e.g., Annual Robotics Challenge 2026"
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Category *</label>
+            <select id="new-event-category" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="Tech">Tech & AI</option>
+              <option value="Cultural">Cultural Fest</option>
+              <option value="Sports">Sports Meet</option>
+              <option value="Workshop">Workshop</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Total Seats *</label>
+            <input type="number" id="new-event-capacity" min="5" max="1000" value="50" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Date & Time *</label>
+            <input type="text" id="new-event-date" placeholder="Oct 24, 2026 • 2:00 PM" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Venue Location *</label>
+            <input type="text" id="new-event-venue" placeholder="Campus Innovation Lab B" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Description *</label>
+          <textarea id="new-event-desc" rows="3" required placeholder="Describe event goals, target audience, key takeaways..."
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Card Header Theme</label>
+          <select id="new-event-gradient" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="from-indigo-600 to-purple-600">Indigo Violet (Tech)</option>
+            <option value="from-emerald-600 to-teal-600">Emerald Teal (Green)</option>
+            <option value="from-amber-600 to-orange-600">Amber Sunset (Cultural)</option>
+            <option value="from-pink-600 to-rose-600">Pink Rose (Sports/Art)</option>
+          </select>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-800">
+          <button type="button" id="cancel-add-modal" class="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition">Cancel</button>
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition">
+            Publish Event
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    $(document).ready(function() {
+
+      // Initial Default Campus Events Dataset
+      const DEFAULT_EVENTS = [
+        {
+          id: 'ev-101',
+          title: 'AI & Machine Learning Symposium 2026',
+          category: 'Tech',
+          date: 'Oct 15, 2026 • 10:00 AM',
+          venue: 'Main Auditorium, CS Block',
+          capacity: 120,
+          seatsLeft: 14,
+          description: 'Keynote sessions by industry researchers, student showcase, and live AI model demonstrations.',
+          gradient: 'from-indigo-600 to-purple-600',
+          organizer: 'Dept. of Computer Science',
+          bookmarked: false
+        },
+        {
+          id: 'ev-102',
+          title: 'Campus Rhythm & Cultural Night',
+          category: 'Cultural',
+          date: 'Oct 18, 2026 • 6:00 PM',
+          venue: 'Open Air Amphitheatre',
+          capacity: 350,
+          seatsLeft: 82,
+          description: 'Annual music, battle of bands, dance drama, and street food fair organized by the Arts Club.',
+          gradient: 'from-amber-600 to-orange-600',
+          organizer: 'Student Cultural Council',
+          bookmarked: true
+        },
+        {
+          id: 'ev-103',
+          title: 'Inter-College Hackathon: CodeSprint 24h',
+          category: 'Tech',
+          date: 'Nov 02, 2026 • 09:00 AM',
+          venue: 'Innovation Hub Lab 3',
+          capacity: 80,
+          seatsLeft: 3,
+          description: '24-hour overnight hacking competition with prizes, mentorship, free swag, and energy drinks.',
+          gradient: 'from-purple-600 to-pink-600',
+          organizer: 'IEEE Student Branch',
+          bookmarked: false
+        },
+        {
+          id: 'ev-104',
+          title: 'Inter-Departmental Football Championship',
+          category: 'Sports',
+          date: 'Oct 22, 2026 • 3:30 PM',
+          venue: 'Central Campus Stadium',
+          capacity: 200,
+          seatsLeft: 45,
+          description: 'Cheer for your department team in the thrilling knock-out tournament semi-finals.',
+          gradient: 'from-pink-600 to-rose-600',
+          organizer: 'Campus Sports Authority',
+          bookmarked: false
+        },
+        {
+          id: 'ev-105',
+          title: 'UI/UX Design & Prototyping Masterclass',
+          category: 'Workshop',
+          date: 'Nov 08, 2026 • 1:00 PM',
+          venue: 'Design Studio 204',
+          capacity: 40,
+          seatsLeft: 8,
+          description: 'Hands-on Figma masterclass for beginners and intermediate designers. Laptops required.',
+          gradient: 'from-emerald-600 to-teal-600',
+          organizer: 'Design Collective',
+          bookmarked: false
+        },
+        {
+          id: 'ev-106',
+          title: 'Entrepreneurship Summit & Pitch Fest',
+          category: 'Workshop',
+          date: 'Nov 14, 2026 • 11:00 AM',
+          venue: 'Incubation Hall B',
+          capacity: 90,
+          seatsLeft: 27,
+          description: 'Pitch your startup ideas to venture capitalists and alumni founders for seed grants.',
+          gradient: 'from-blue-600 to-indigo-600',
+          organizer: 'Campus E-Cell',
+          bookmarked: false
+        }
+      ];
+
+      // Local State
+      let events = [];
+      let registrations = [];
+      let activeCategory = 'All';
+      let searchQuery = '';
+
+      function loadFromStorage() {
+        const savedEvents = localStorage.getItem('campus_events_data');
+        const savedRegistrations = localStorage.getItem('campus_user_registrations');
+
+        if (savedEvents) {
+          try { events = JSON.parse(savedEvents); } catch(e) { events = DEFAULT_EVENTS; }
+        } else {
+          events = DEFAULT_EVENTS;
+          saveEventsToStorage();
+        }
+
+        if (savedRegistrations) {
+          try { registrations = JSON.parse(savedRegistrations); } catch(e) { registrations = []; }
+        } else {
+          registrations = [];
+        }
+      }
+
+      function saveEventsToStorage() {
+        localStorage.setItem('campus_events_data', JSON.stringify(events));
+      }
+
+      function saveRegistrationsToStorage() {
+        localStorage.setItem('campus_user_registrations', JSON.stringify(registrations));
+      }
+
+      function showToast(message, type = 'info') {
+        const icons = {
+          success: 'fa-circle-check text-emerald-400',
+          error: 'fa-circle-xmark text-rose-400',
+          info: 'fa-circle-info text-indigo-400',
+          warning: 'fa-triangle-exclamation text-amber-400'
+        };
+
+        const toastHtml = `
+          <div class="toast">
+            <i class="fa-solid ${icons[type] || icons.info} text-lg"></i>
+            <span class="text-xs font-semibold text-slate-100">${message}</span>
+          </div>
+        `;
+
+        const $toast = $(toastHtml);
+        $('#toast-container').append($toast);
+
+        setTimeout(() => {
+          $toast.fadeOut(400, function() { $(this).remove(); });
+        }, 3500);
+      }
+
+      function updateDashboardStats() {
+        const total = events.length;
+        const myRegs = registrations.length;
+        const seatsLeftTotal = events.reduce((sum, ev) => sum + ev.seatsLeft, 0);
+        const highDemandCount = events.filter(e => e.seatsLeft < 15).length;
+
+        $('#stat-total-events').text(total);
+        $('#stat-my-registrations').text(myRegs);
+        $('#stat-seats-left').text(seatsLeftTotal);
+        $('#stat-today-events').text(highDemandCount);
+
+        if (myRegs > 0) {
+          $('#ticket-badge-count').text(myRegs).removeClass('hidden');
+        } else {
+          $('#ticket-badge-count').addClass('hidden');
+        }
+      }
+
+      function renderEventsGrid() {
+        const $container = $('#events-grid-container');
+        $container.empty();
+
+        let filtered = events.filter(ev => {
+          const matchesCategory = activeCategory === 'All' || ev.category.toLowerCase() === activeCategory.toLowerCase();
+          const matchesSearch = ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                ev.venue.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                ev.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                ev.organizer.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesCategory && matchesSearch;
+        });
+
+        if (filtered.length === 0) {
+          $('#no-events-state').removeClass('hidden');
+          return;
+        } else {
+          $('#no-events-state').addClass('hidden');
+        }
+
+        filtered.forEach(ev => {
+          const isRegistered = registrations.some(r => r.eventId === ev.id);
+          const isFull = ev.seatsLeft <= 0;
+
+          let seatBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+          if (ev.seatsLeft <= 5) seatBadgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse';
+          else if (ev.seatsLeft <= 15) seatBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+
+          const cardHtml = `
+            <div class="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col justify-between border border-slate-800" data-id="${ev.id}">
+              <div class="h-32 bg-gradient-to-r ${ev.gradient} p-4 flex flex-col justify-between relative">
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-black uppercase tracking-wider bg-slate-950/60 backdrop-blur-md px-2.5 py-1 rounded-full text-white border border-white/10">
+                    ${ev.category}
+                  </span>
+                  <button class="bookmark-btn text-white/80 hover:text-amber-300 text-base transition" data-id="${ev.id}">
+                    <i class="${ev.bookmarked ? 'fa-solid' : 'fa-regular'} fa-bookmark ${ev.bookmarked ? 'text-amber-400' : ''}"></i>
+                  </button>
+                </div>
+                <div class="text-xs text-white/90 font-medium flex items-center gap-1.5">
+                  <i class="fa-solid fa-users text-white/70"></i>
+                  <span>${ev.organizer}</span>
+                </div>
+              </div>
+
+              <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+                <div>
+                  <h3 class="font-bold text-lg text-white leading-snug line-clamp-2 hover:text-indigo-300 transition">
+                    ${ev.title}
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-2 line-clamp-2">${ev.description}</p>
+                </div>
+
+                <div class="space-y-2 text-xs text-slate-300 border-t border-slate-800/80 pt-3">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-regular fa-calendar text-indigo-400 w-4"></i>
+                    <span>${ev.date}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-indigo-400 w-4"></i>
+                    <span class="truncate">${ev.venue}</span>
+                  </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between border-t border-slate-800/80">
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${seatBadgeClass}">
+                    ${isFull ? 'Sold Out' : ev.seatsLeft + ' Seats Left'}
+                  </span>
+
+                  ${isRegistered ? `
+                    <button class="view-pass-btn bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5" data-id="${ev.id}">
+                      <i class="fa-solid fa-ticket"></i> View Pass
+                    </button>
+                  ` : `
+                    <button class="${isFull ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'} open-register-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5" 
+                      data-id="${ev.id}" ${isFull ? 'disabled' : ''}>
+                      <span>${isFull ? 'Full' : 'Register Now'}</span>
+                      <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                  `}
+                </div>
+              </div>
+            </div>
+          `;
+          $container.append(cardHtml);
+        });
+      }
+
+      function renderWalletTickets() {
+        const $container = $('#wallet-tickets-container');
+        $container.empty();
+
+        if (registrations.length === 0) {
+          $('#empty-wallet-state').removeClass('hidden');
+          return;
+        } else {
+          $('#empty-wallet-state').addClass('hidden');
+        }
+
+        registrations.forEach(reg => {
+          const event = events.find(e => e.id === reg.eventId) || {
+            title: reg.eventTitle,
+            date: reg.eventDate,
+            venue: reg.eventVenue,
+            category: reg.eventCategory || 'Campus Event'
+          };
+
+          const ticketCard = `
+            <div class="glass-card rounded-2xl p-6 border border-slate-700/80 flex flex-col justify-between space-y-4 relative overflow-hidden">
+              <div class="absolute top-0 right-0 bg-indigo-600/20 text-indigo-300 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-bl-xl border-l border-b border-indigo-500/30">
+                ${event.category}
+              </div>
+
+              <div>
+                <span class="text-xs text-slate-400 font-mono">PASS ID: <span class="text-indigo-400 font-bold">${reg.regCode}</span></span>
+                <h3 class="text-lg font-bold text-white mt-1">${event.title}</h3>
+                
+                <div class="mt-3 space-y-1 text-xs text-slate-300">
+                  <p><i class="fa-regular fa-calendar text-indigo-400 mr-1.5"></i> ${event.date}</p>
+                  <p><i class="fa-solid fa-location-dot text-indigo-400 mr-1.5"></i> ${event.venue}</p>
+                  <p><i class="fa-solid fa-user text-indigo-400 mr-1.5"></i> ${reg.studentName} (${reg.studentId})</p>
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+                <button class="open-pass-btn bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5" data-reg-id="${reg.regCode}">
+                  <i class="fa-solid fa-qrcode"></i> Digital Pass
+                </button>
+
+                <button class="cancel-reg-btn bg-slate-800 hover:bg-rose-600/20 hover:text-rose-300 text-slate-400 px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-700 hover:border-rose-500/30 transition" data-reg-id="${reg.regCode}">
+                  <i class="fa-solid fa-trash-can"></i> Cancel
+                </button>
+              </div>
+            </div>
+          `;
+          $container.append(ticketCard);
+        });
+      }
+
+      function openModal($modal) {
+        $modal.removeClass('hidden');
+        setTimeout(() => {
+          $modal.find('.modal-box').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+        }, 10);
+      }
+
+      function closeModal($modal) {
+        $modal.find('.modal-box').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        setTimeout(() => {
+          $modal.addClass('hidden');
+        }, 200);
+      }
+
+      function triggerRegistrationModal(eventId) {
+        const ev = events.find(e => e.id === eventId);
+        if (!ev) return;
+
+        if (ev.seatsLeft <= 0) {
+          showToast('Sorry, this event is already sold out!', 'warning');
+          return;
+        }
+
+        $('#reg-event-id').val(ev.id);
+        $('#reg-modal-title').text(ev.title);
+        $('#reg-modal-category').text(ev.category);
+        $('#reg-modal-time').text(ev.date);
+        $('#reg-modal-venue').text(ev.venue);
+        $('#reg-modal-seats-badge').text(ev.seatsLeft + ' Seats Remaining');
+
+        $('.form-error').addClass('hidden');
+        $('#event-registration-form')[0].reset();
+
+        openModal($('#registration-modal'));
+      }
+
+      function triggerPassModal(registrationData) {
+        $('#pass-event-title').text(registrationData.eventTitle);
+        $('#pass-event-category').text(registrationData.eventCategory || 'Campus Event');
+        $('#pass-event-time').text(registrationData.eventDate);
+        $('#pass-event-venue').text(registrationData.eventVenue);
+        $('#pass-attendee-name').text(registrationData.studentName);
+        $('#pass-attendee-id').text(registrationData.studentId);
+        $('#pass-attendee-dept').text(registrationData.department + ' (' + registrationData.year + ')');
+        $('#pass-reg-code').text(registrationData.regCode);
+
+        openModal($('#pass-modal'));
+      }
+
+      function mockAjaxRegistration(registrationPayload) {
+        const deferred = $.Deferred();
+
+        // Simulate 400ms server network latency
+        setTimeout(() => {
+          const targetEvent = events.find(e => e.id === registrationPayload.eventId);
+          if (targetEvent && targetEvent.seatsLeft > 0) {
+            deferred.resolve({
+              status: 'success',
+              code: 200,
+              message: 'Registration confirmed',
+              data: registrationPayload
+            });
+          } else {
+            deferred.reject({
+              status: 'error',
+              code: 400,
+              message: 'No available seats left for this event.'
+            });
+          }
+        }, 400);
+
+        return deferred.promise();
+      }
+
+      function processEventRegistration(registrationPayload) {
+        const $submitBtn = $('#submit-reg-btn');
+        $submitBtn.prop('disabled', true).addClass('opacity-75').html('<i class="fa-solid fa-spinner fa-spin"></i> Registering...');
+
+        mockAjaxRegistration(registrationPayload)
+          .done(function(res) {
+            const eventIndex = events.findIndex(e => e.id === registrationPayload.eventId);
+            if (eventIndex !== -1 && events[eventIndex].seatsLeft > 0) {
+              events[eventIndex].seatsLeft -= 1;
+              saveEventsToStorage();
+            }
+
+            registrations.push(registrationPayload);
+            saveRegistrationsToStorage();
+
+            updateDashboardStats();
+            renderEventsGrid();
+            renderWalletTickets();
+
+            closeModal($('#registration-modal'));
+            showToast('Registration successful! Pass generated.', 'success');
+
+            triggerPassModal(registrationPayload);
+            updateLiveTicker(`${registrationPayload.studentName} registered for ${registrationPayload.eventTitle}`);
+          })
+          .fail(function(err) {
+            showToast(err.message || 'Registration failed.', 'error');
+          })
+          .always(function() {
+            $submitBtn.prop('disabled', false).removeClass('opacity-75').html('<i class="fa-solid fa-check"></i> <span>Confirm & Get Pass</span>');
+          });
+      }
+
+      $('#event-registration-form').on('submit', function(e) {
+        e.preventDefault();
+
+        let isValid = true;
+        const name = $('#reg-student-name').val().trim();
+        const studentId = $('#reg-student-id').val().trim();
+        const email = $('#reg-student-email').val().trim();
+        const dept = $('#reg-department').val();
+        const year = $('#reg-year').val();
+        const eventId = $('#reg-event-id').val();
+
+        if (name.length < 2) {
+          $('#reg-student-name').next('.form-error').removeClass('hidden');
+          isValid = false;
+        } else {
+          $('#reg-student-name').next('.form-error').addClass('hidden');
+        }
+
+        if (studentId.length < 3) {
+          $('#reg-student-id').next('.form-error').removeClass('hidden');
+          isValid = false;
+        } else {
+          $('#reg-student-id').next('.form-error').addClass('hidden');
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          $('#reg-student-email').next('.form-error').removeClass('hidden');
+          isValid = false;
+        } else {
+          $('#reg-student-email').next('.form-error').addClass('hidden');
+        }
+
+        if (!dept) {
+          $('#reg-department').next('.form-error').removeClass('hidden');
+          isValid = false;
+        } else {
+          $('#reg-department').next('.form-error').addClass('hidden');
+        }
+
+        if (!year) {
+          $('#reg-year').next('.form-error').removeClass('hidden');
+          isValid = false;
+        } else {
+          $('#reg-year').next('.form-error').addClass('hidden');
+        }
+
+        if (!isValid) return;
+
+        const targetEvent = events.find(e => e.id === eventId);
+        if (!targetEvent) return;
+
+        const regCode = 'PASS-' + Math.floor(100000 + Math.random() * 900000);
+
+        const payload = {
+          regCode: regCode,
+          eventId: targetEvent.id,
+          eventTitle: targetEvent.title,
+          eventDate: targetEvent.date,
+          eventVenue: targetEvent.venue,
+          eventCategory: targetEvent.category,
+          studentName: name,
+          studentId: studentId,
+          email: email,
+          department: dept,
+          year: year,
+          meal: $('#reg-meal').val(),
+          tshirt: $('#reg-tshirt').val(),
+          timestamp: new Date().toISOString()
+        };
+
+        processEventRegistration(payload);
+      });
+
+      // Post New Event
+      $('#add-event-form').on('submit', function(e) {
+        e.preventDefault();
+
+        const title = $('#new-event-title').val().trim();
+        const category = $('#new-event-category').val();
+        const capacity = parseInt($('#new-event-capacity').val(), 10) || 50;
+        const date = $('#new-event-date').val().trim();
+        const venue = $('#new-event-venue').val().trim();
+        const desc = $('#new-event-desc').val().trim();
+        const gradient = $('#new-event-gradient').val();
+
+        const newEv = {
+          id: 'ev-' + Date.now(),
+          title: title,
+          category: category,
+          date: date,
+          venue: venue,
+          capacity: capacity,
+          seatsLeft: capacity,
+          description: desc,
+          gradient: gradient,
+          organizer: 'Campus Student Council',
+          bookmarked: false
+        };
+
+        events.unshift(newEv);
+        saveEventsToStorage();
+
+        updateDashboardStats();
+        renderEventsGrid();
+
+        closeModal($('#add-event-modal'));
+        $('#add-event-form')[0].reset();
+
+        showToast('New campus event published!', 'success');
+        updateLiveTicker(`New Event: ${title}`);
+      });
+
+      // Interactive Event Controls
+      $('#category-filter-group').on('click', '.filter-btn', function() {
+        $('.filter-btn').removeClass('active bg-indigo-600 text-white').addClass('bg-slate-800 text-slate-300');
+        $(this).addClass('active bg-indigo-600 text-white').removeClass('bg-slate-800 text-slate-300');
+        activeCategory = $(this).data('category');
+        renderEventsGrid();
+      });
+
+      $('#event-search-input').on('keyup input', function() {
+        searchQuery = $(this).val();
+        renderEventsGrid();
+      });
+
+      $('#reset-filters-btn').on('click', function() {
+        searchQuery = '';
+        activeCategory = 'All';
+        $('#event-search-input').val('');
+        $('.filter-btn').removeClass('active bg-indigo-600 text-white').addClass('bg-slate-800 text-slate-300');
+        $('.filter-btn[data-category="All"]').addClass('active bg-indigo-600 text-white');
+        renderEventsGrid();
+      });
+
+      $('#nav-events-btn, #browse-events-redirect-btn, #logo-btn').on('click', function() {
+        $('#nav-events-btn').addClass('bg-indigo-600 text-white').removeClass('text-slate-300');
+        $('#nav-tickets-btn').removeClass('bg-indigo-600 text-white').addClass('text-slate-300');
+        $('#wallet-view').addClass('hidden');
+        $('#events-view').removeClass('hidden');
+      });
+
+      $('#nav-tickets-btn').on('click', function() {
+        $('#nav-tickets-btn').addClass('bg-indigo-600 text-white').removeClass('text-slate-300');
+        $('#nav-events-btn').removeClass('bg-indigo-600 text-white').addClass('text-slate-300');
+        $('#events-view').addClass('hidden');
+        $('#wallet-view').removeClass('hidden');
+        renderWalletTickets();
+      });
+
+      $('#open-add-event-btn').on('click', function() { openModal($('#add-event-modal')); });
+      $('#close-add-modal, #cancel-add-modal').on('click', function() { closeModal($('#add-event-modal')); });
+      $('#close-reg-modal, #cancel-reg-btn').on('click', function() { closeModal($('#registration-modal')); });
+      $('#close-pass-modal').on('click', function() { closeModal($('#pass-modal')); });
+
+      $('#events-grid-container').on('click', '.open-register-btn', function() {
+        triggerRegistrationModal($(this).data('id'));
+      });
+
+      $('#events-grid-container').on('click', '.view-pass-btn', function() {
+        const id = $(this).data('id');
+        const userReg = registrations.find(r => r.eventId === id);
+        if (userReg) triggerPassModal(userReg);
+      });
+
+      $('#events-grid-container').on('click', '.bookmark-btn', function(e) {
+        e.stopPropagation();
+        const id = $(this).data('id');
+        const ev = events.find(e => e.id === id);
+        if (ev) {
+          ev.bookmarked = !ev.bookmarked;
+          saveEventsToStorage();
+          renderEventsGrid();
+          showToast(ev.bookmarked ? 'Saved to bookmarks' : 'Removed bookmark', 'info');
+        }
+      });
+
+      $('#wallet-tickets-container').on('click', '.open-pass-btn', function() {
+        const regCode = $(this).data('reg-id');
+        const reg = registrations.find(r => r.regCode === regCode);
+        if (reg) triggerPassModal(reg);
+      });
+
+      // Cancellation and seat restoration
+      $('#wallet-tickets-container').on('click', '.cancel-reg-btn', function() {
+        const regCode = $(this).data('reg-id');
+        const regIndex = registrations.findIndex(r => r.regCode === regCode);
+        
+        if (regIndex !== -1) {
+          const removed = registrations[regIndex];
+          const evIndex = events.findIndex(e => e.id === removed.eventId);
+          if (evIndex !== -1) {
+            events[evIndex].seatsLeft += 1;
+            saveEventsToStorage();
+          }
+
+          registrations.splice(regIndex, 1);
+          saveRegistrationsToStorage();
+
+          updateDashboardStats();
+          renderEventsGrid();
+          renderWalletTickets();
+
+          showToast('Registration cancelled and seat restored.', 'warning');
+        }
+      });
+
+      $('#print-pass-btn').on('click', function() { window.print(); });
+
+      $('#refresh-ajax-btn').on('click', function() {
+        $('#refresh-ajax-btn i').addClass('fa-spin');
+        setTimeout(() => {
+          $('#refresh-ajax-btn i').removeClass('fa-spin');
+          showToast('Catalog refreshed via AJAX sync.', 'success');
+        }, 500);
+      });
+
+      // Real-time Activity Simulation
+      const SIMULATED_ACTIVITIES = [
+        "Sarah J. registered for AI & Machine Learning Symposium",
+        "Only 2 seats left for CodeSprint 24h Hackathon!",
+        "New Workshop 'UI/UX Masterclass' announced",
+        "David K. reserved a ticket for Cultural Night",
+        "Campus Sports Championship registrations open"
+      ];
+
+      function updateLiveTicker(msg) {
+        const $ticker = $('#live-ticker-text');
+        $ticker.fadeOut(250, function() {
+          $(this).text(msg || SIMULATED_ACTIVITIES[Math.floor(Math.random() * SIMULATED_ACTIVITIES.length)]).fadeIn(250);
+        });
+      }
+
+      setInterval(() => { updateLiveTicker(); }, 8000);
+
+      // Start App
+      loadFromStorage();
+      updateDashboardStats();
+      renderEventsGrid();
+      updateLiveTicker("Campus Event Hub initialized. All systems ready.");
+    });
+  </script>
+</body>
+</html>

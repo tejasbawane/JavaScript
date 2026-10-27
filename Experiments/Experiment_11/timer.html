@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduPulse - Smart Class Scheduler & Live Countdown</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    
+    /* Glowing card effect for active live class */
+    .glow-active {
+      box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.35);
+    }
+    
+    .glow-upcoming {
+      box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.25);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header / Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid font-bold fa-clock-rotate-left text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">EduPulse</h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Smart Class Scheduler & Real-Time Countdown</p>
+        </div>
+      </div>
+
+      <!-- Live Clock Display -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden md:flex flex-col items-end">
+          <span id="current-date-display" class="text-xs font-medium text-slate-400">Loading date...</span>
+          <span id="current-time-display" class="font-mono text-sm font-semibold text-cyan-400 tracking-wider">00:00:00 AM</span>
+        </div>
+
+        <button id="btn-open-add-modal" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/40">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Class</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 overflow-y-auto">
+
+    <!-- Hero / Next Upcoming Class Countdown Box -->
+    <section id="hero-countdown-card" class="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 p-6 md:p-8 shadow-2xl transition-all duration-300">
+      <div class="absolute -right-20 -top-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div id="countdown-content" class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Left Side: Class Details -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span id="hero-badge-title">NEXT UPCOMING CLASS</span>
+          </div>
+
+          <h2 id="hero-class-title" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            No Upcoming Classes
+          </h2>
+
+          <div id="hero-meta" class="flex flex-wrap items-center gap-4 text-sm text-slate-300">
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <i class="fa-regular fa-user text-indigo-400"></i>
+              <span id="hero-instructor">Instructor: N/A</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <i class="fa-regular fa-compass text-indigo-400"></i>
+              <span id="hero-room">Room: N/A</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-400">
+              <i class="fa-regular fa-calendar-days text-indigo-400"></i>
+              <span id="hero-day-time">N/A</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Big Timer Digits -->
+        <div class="lg:col-span-5 flex flex-col items-center lg:items-end justify-center">
+          <div class="grid grid-cols-4 gap-2 sm:gap-3 text-center">
+            <!-- Days -->
+            <div class="flex flex-col bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 sm:p-3 min-w-[64px] sm:min-w-[76px]">
+              <span id="timer-days" class="font-mono text-2xl sm:text-3xl font-bold text-indigo-400">00</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mt-1">Days</span>
+            </div>
+            <!-- Hours -->
+            <div class="flex flex-col bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 sm:p-3 min-w-[64px] sm:min-w-[76px]">
+              <span id="timer-hours" class="font-mono text-2xl sm:text-3xl font-bold text-indigo-400">00</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mt-1">Hours</span>
+            </div>
+            <!-- Minutes -->
+            <div class="flex flex-col bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 sm:p-3 min-w-[64px] sm:min-w-[76px]">
+              <span id="timer-minutes" class="font-mono text-2xl sm:text-3xl font-bold text-indigo-400">00</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mt-1">Mins</span>
+            </div>
+            <!-- Seconds -->
+            <div class="flex flex-col bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 sm:p-3 min-w-[64px] sm:min-w-[76px]">
+              <span id="timer-seconds" class="font-mono text-2xl sm:text-3xl font-bold text-cyan-400">00</span>
+              <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mt-1">Secs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Control Bar / Filters -->
+    <section class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md">
+      <!-- Search -->
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" id="search-input" placeholder="Search class name, instructor, or room..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" />
+      </div>
+
+      <!-- Filters Group -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Day Filter -->
+        <div class="flex items-center gap-2">
+          <label for="filter-day" class="text-xs font-semibold text-slate-400 hidden sm:inline">Day:</label>
+          <select id="filter-day" class="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Days</option>
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex items-center gap-2">
+          <label for="filter-status" class="text-xs font-semibold text-slate-400 hidden sm:inline">Status:</label>
+          <select id="filter-status" class="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Statuses</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+        </div>
+
+        <!-- Quick Reset -->
+        <button id="btn-reset-filters" class="p-2 text-slate-400 hover:text-slate-200 bg-slate-950 border border-slate-800 rounded-lg transition-colors" title="Reset Filters">
+          <i class="fa-solid fa-arrows-rotate text-sm"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Schedule Cards Grid / List Container -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-400"></i>
+          <span>Scheduled Classes</span>
+          <span id="class-count-badge" class="ml-2 text-xs font-semibold bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded-full">0</span>
+        </h3>
+      </div>
+
+      <!-- Grid for Class Items -->
+      <div id="class-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Dynamic JS Content -->
+      </div>
+
+      <!-- Empty State View -->
+      <div id="empty-state" class="hidden flex-col items-center justify-center py-16 bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl text-center">
+        <div class="h-16 w-16 bg-slate-800/80 rounded-full flex items-center justify-center text-slate-500 text-2xl mb-3">
+          <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-slate-300">No classes found</h4>
+        <p class="text-sm text-slate-500 max-w-xs mt-1">Try adjusting your filters or search query, or add a new class schedule.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Class Modal Form (Add / Edit) -->
+  <div id="class-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="modal-box">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-calendar-plus text-indigo-400"></i>
+          <span>Add New Class</span>
+        </h3>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form Body -->
+      <form id="class-form" class="p-6 space-y-4">
+        <input type="hidden" id="form-class-id" value="" />
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-title">Class / Subject Title *</label>
+          <input type="text" id="form-title" required placeholder="e.g. Data Structures & Algorithms" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-instructor">Instructor Name</label>
+            <input type="text" id="form-instructor" placeholder="e.g. Prof. Alan Turing" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-room">Room / Location</label>
+            <input type="text" id="form-room" placeholder="e.g. Lab 402 / Zoom" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-day">Day of Week *</label>
+            <select id="form-day" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-start-time">Start Time *</label>
+            <input type="time" id="form-start-time" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1" for="form-end-time">End Time *</label>
+            <input type="time" id="form-end-time" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" id="btn-cancel-modal" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-md transition-all">
+            Save Schedule
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Real-time Notification Banner / Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- JavaScript ES6 Modules Logic -->
+  <script type="module">
+    /**
+     * MODULE 1: Storage & State Management
+     * Manages local persistence and active class list.
+     */
+    const StorageModule = (() => {
+      const STORAGE_KEY = 'edupulse_classes_v1';
+
+      // Default mock dataset if local storage is empty
+      const defaultClasses = [
+        {
+          id: '1',
+          title: 'Advanced JavaScript & Async JS',
+          instructor: 'Dr. Sarah Connor',
+          room: 'Hall B - Tech Hub',
+          day: getTodayName(),
+          startTime: addMinutesToCurrentTime(-15), // Started 15 mins ago
+          endTime: addMinutesToCurrentTime(45)     // Ends in 45 mins
+        },
+        {
+          id: '2',
+          title: 'Database Systems & SQL',
+          instructor: 'Prof. Marcus Vance',
+          room: 'Lab 103',
+          day: getTodayName(),
+          startTime: addMinutesToCurrentTime(90),  // Starts in 1.5 hours
+          endTime: addMinutesToCurrentTime(150)
+        },
+        {
+          id: '3',
+          title: 'UI/UX Design Systems',
+          instructor: 'Elena Rostova',
+          room: 'Studio A',
+          day: getTomorrowName(),
+          startTime: '10:00',
+          endTime: '12:00'
+        }
+      ];
+
+      function getTodayName() {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[new Date().getDay()];
+      }
+
+      function getTomorrowName() {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[(new Date().getDay() + 1) % 7];
+      }
+
+      function addMinutesToCurrentTime(minutes) {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() + minutes);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+      }
+
+      function loadClasses() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) {
+          saveClasses(defaultClasses);
+          return defaultClasses;
+        }
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Failed to parse storage:", e);
+          return defaultClasses;
+        }
+      }
+
+      function saveClasses(classes) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(classes));
+      }
+
+      return {
+        loadClasses,
+        saveClasses
+      };
+    })();
+
+    /**
+     * MODULE 2: Date & Time Calculation Utility
+     * Converts day strings and HH:mm times into concrete Javascript Date objects.
+     */
+    const TimeUtilsModule = (() => {
+      const dayIndexMap = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+      };
+
+      /**
+       * Calculates target Date object for a class schedule occurrence
+       */
+      function getClassOccurrenceDate(dayName, timeStr, referenceDate = new Date()) {
+        const targetDayIdx = dayIndexMap[dayName];
+        const currentDayIdx = referenceDate.getDay();
+        
+        let daysUntil = targetDayIdx - currentDayIdx;
+        
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        
+        const targetDate = new Date(referenceDate);
+        targetDate.setHours(hours, minutes, 0, 0);
+
+        // If today is target day but time already passed, move to next week
+        if (daysUntil === 0 && referenceDate > targetDate) {
+          // Check if end time hasn't passed yet today
+          daysUntil = 0; 
+        } else if (daysUntil < 0) {
+          daysUntil += 7;
+        }
+
+        targetDate.setDate(targetDate.getDate() + daysUntil);
+        return targetDate;
+      }
+
+      /**
+       * Evaluates live status of a class schedule item
+       */
+      function getClassStatus(item, now = new Date()) {
+        const currentDayName = Object.keys(dayIndexMap).find(key => dayIndexMap[key] === now.getDay());
+        
+        const startToday = getClassOccurrenceDate(item.day, item.startTime, now);
+        const endToday = getClassOccurrenceDate(item.day, item.endTime, now);
+
+        // Adjust if end time crosses midnight
+        if (endToday < startToday) {
+          endToday.setDate(endToday.getDate() + 1);
+        }
+
+        if (item.day === currentDayName) {
+          if (now >= startToday && now <= endToday) {
+            return { status: 'IN_PROGRESS', label: 'In Progress', startDate: startToday, endDate: endToday };
+          }
+        }
+
+        // Calculate next upcoming occurrence
+        let nextStart = getClassOccurrenceDate(item.day, item.startTime, now);
+        if (nextStart < now) {
+          nextStart.setDate(nextStart.getDate() + 7);
+        }
+
+        return {
+          status: 'UPCOMING',
+          label: 'Upcoming',
+          startDate: nextStart,
+          endDate: getClassOccurrenceDate(item.day, item.endTime, nextStart)
+        };
+      }
+
+      return {
+        getClassOccurrenceDate,
+        getClassStatus
+      };
+    })();
+
+    /**
+     * MODULE 3: App Manager
+     * Handles state, timers (setInterval, setTimeout), DOM updates, and UI events.
+     */
+    const AppManager = (() => {
+      let classList = [];
+      let activeTimers = {
+        clockInterval: null,
+        countdownInterval: null,
+        notificationTimeoutMap: new Map()
+      };
+
+      // DOM Elements Cache
+      const DOM = {
+        clockDate: document.getElementById('current-date-display'),
+        clockTime: document.getElementById('current-time-display'),
+        
+        // Countdown Hero Elements
+        heroBadgeTitle: document.getElementById('hero-badge-title'),
+        heroClassTitle: document.getElementById('hero-class-title'),
+        heroInstructor: document.getElementById('hero-instructor'),
+        heroRoom: document.getElementById('hero-room'),
+        heroDayTime: document.getElementById('hero-day-time'),
+        heroCard: document.getElementById('hero-countdown-card'),
+        
+        timerDays: document.getElementById('timer-days'),
+        timerHours: document.getElementById('timer-hours'),
+        timerMinutes: document.getElementById('timer-minutes'),
+        timerSeconds: document.getElementById('timer-seconds'),
+        
+        // List Controls
+        classList: document.getElementById('class-list'),
+        emptyState: document.getElementById('empty-state'),
+        classCountBadge: document.getElementById('class-count-badge'),
+        searchInput: document.getElementById('search-input'),
+        filterDay: document.getElementById('filter-day'),
+        filterStatus: document.getElementById('filter-status'),
+        btnResetFilters: document.getElementById('btn-reset-filters'),
+        
+        // Modal Form Elements
+        classModal: document.getElementById('class-modal'),
+        modalBox: document.getElementById('modal-box'),
+        modalTitle: document.getElementById('modal-title'),
+        classForm: document.getElementById('class-form'),
+        formClassId: document.getElementById('form-class-id'),
+        formTitle: document.getElementById('form-title'),
+        formInstructor: document.getElementById('form-instructor'),
+        formRoom: document.getElementById('form-room'),
+        formDay: document.getElementById('form-day'),
+        formStartTime: document.getElementById('form-start-time'),
+        formEndTime: document.getElementById('form-end-time'),
+        btnOpenAddModal: document.getElementById('btn-open-add-modal'),
+        btnCloseModal: document.getElementById('btn-close-modal'),
+        btnCancelModal: document.getElementById('btn-cancel-modal'),
+        
+        toastContainer: document.getElementById('toast-container')
+      };
+
+      /**
+       * Initialization
+       */
+      function init() {
+        classList = StorageModule.loadClasses();
+        setupEventListeners();
+        startRealtimeClock();
+        startCountdownEngine();
+        scheduleNotifications();
+        renderScheduleList();
+      }
+
+      /**
+       * Real-Time Digital Clock Engine using setInterval()
+       */
+      function startRealtimeClock() {
+        if (activeTimers.clockInterval) clearInterval(activeTimers.clockInterval);
+
+        const updateClock = () => {
+          const now = new Date();
+          DOM.clockDate.textContent = now.toLocaleDateString(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+          DOM.clockTime.textContent = now.toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        };
+
+        updateClock();
+        activeTimers.clockInterval = setInterval(updateClock, 1000);
+      }
+
+      /**
+       * Real-Time Countdown Loop using setInterval()
+       */
+      function startCountdownEngine() {
+        if (activeTimers.countdownInterval) clearInterval(activeTimers.countdownInterval);
+
+        const tick = () => {
+          const now = new Date();
+          
+          // Identify currently active or next closest upcoming class
+          let activeClass = null;
+          let nextClass = null;
+          let smallestDiff = Infinity;
+
+          classList.forEach(item => {
+            const statusInfo = TimeUtilsModule.getClassStatus(item, now);
+            if (statusInfo.status === 'IN_PROGRESS') {
+              activeClass = { item, ...statusInfo };
+            } else if (statusInfo.status === 'UPCOMING') {
+              const diff = statusInfo.startDate - now;
+              if (diff > 0 && diff < smallestDiff) {
+                smallestDiff = diff;
+                nextClass = { item, ...statusInfo };
+              }
+            }
+          });
+
+          // Priority: Show active class countdown to END, or next class countdown to START
+          if (activeClass) {
+            updateHeroDisplay(activeClass.item, activeClass.endDate, true);
+          } else if (nextClass) {
+            updateHeroDisplay(nextClass.item, nextClass.startDate, false);
+          } else {
+            updateHeroDisplay(null, null, false);
+          }
+
+          // Re-render status badges dynamically in case state changed
+          renderScheduleList(false);
+        };
+
+        tick();
+        activeTimers.countdownInterval = setInterval(tick, 1000);
+      }
+
+      /**
+       * Updates top hero banner countdown
+       */
+      function updateHeroDisplay(classItem, targetTime, isInProgress) {
+        if (!classItem || !targetTime) {
+          DOM.heroBadgeTitle.textContent = "NO SCHEDULED CLASSES";
+          DOM.heroClassTitle.textContent = "All caught up!";
+          DOM.heroInstructor.textContent = "Instructor: N/A";
+          DOM.heroRoom.textContent = "Room: N/A";
+          DOM.heroDayTime.textContent = "N/A";
+          DOM.timerDays.textContent = "00";
+          DOM.timerHours.textContent = "00";
+          DOM.timerMinutes.textContent = "00";
+          DOM.timerSeconds.textContent = "00";
+          DOM.heroCard.classList.remove('glow-active', 'glow-upcoming');
+          return;
+        }
+
+        if (isInProgress) {
+          DOM.heroBadgeTitle.textContent = "LIVE NOW • CLASS IN PROGRESS";
+          DOM.heroCard.classList.add('glow-active');
+          DOM.heroCard.classList.remove('glow-upcoming');
+        } else {
+          DOM.heroBadgeTitle.textContent = "NEXT UPCOMING CLASS";
+          DOM.heroCard.classList.add('glow-upcoming');
+          DOM.heroCard.classList.remove('glow-active');
+        }
+
+        DOM.heroClassTitle.textContent = classItem.title;
+        DOM.heroInstructor.textContent = `Instructor: ${classItem.instructor || 'N/A'}`;
+        DOM.heroRoom.textContent = `Room: ${classItem.room || 'N/A'}`;
+        DOM.heroDayTime.textContent = `${classItem.day}s @ ${format12Hr(classItem.startTime)} - ${format12Hr(classItem.endTime)}`;
+
+        const now = new Date();
+        const diffMs = Math.max(0, targetTime - now);
+
+        const seconds = Math.floor((diffMs / 1000) % 60);
+        const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+        const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        DOM.timerDays.textContent = String(days).padStart(2, '0');
+        DOM.timerHours.textContent = String(hours).padStart(2, '0');
+        DOM.timerMinutes.textContent = String(minutes).padStart(2, '0');
+        DOM.timerSeconds.textContent = String(seconds).padStart(2, '0');
+      }
+
+      /**
+       * Notification Scheduler using setTimeout()
+       * Dynamically calculates delay until next class start and sets alerts
+       */
+      function scheduleNotifications() {
+        // Clear existing active setTimeout timers
+        activeTimers.notificationTimeoutMap.forEach(timeoutId => clearTimeout(timeoutId));
+        activeTimers.notificationTimeoutMap.clear();
+
+        const now = new Date();
+
+        classList.forEach(item => {
+          const statusInfo = TimeUtilsModule.getClassStatus(item, now);
+          
+          if (statusInfo.status === 'UPCOMING') {
+            const timeUntilStart = statusInfo.startDate.getTime() - now.getTime();
+
+            // Only set setTimeout if event happens within the next 24 hours
+            if (timeUntilStart > 0 && timeUntilStart <= 24 * 60 * 60 * 1000) {
+              const timerId = setTimeout(() => {
+                triggerToastNotification(`Class Starting Now!`, `"${item.title}" in ${item.room || 'assigned room'} is starting now.`);
+              }, timeUntilStart);
+
+              activeTimers.notificationTimeoutMap.set(item.id, timerId);
+            }
+          }
+        });
+      }
+
+      /**
+       * Visual Toast Notifications
+       */
+      function triggerToastNotification(title, message) {
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-start gap-3 bg-slate-900 border border-indigo-500/50 p-4 rounded-xl shadow-2xl text-slate-100 transform translate-y-4 opacity-0 transition-all duration-300`;
+        toast.innerHTML = `
+          <div class="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg shrink-0">
+            <i class="fa-solid fa-bell text-lg animate-bounce"></i>
+          </div>
+          <div class="flex-1">
+            <h5 class="text-sm font-bold text-white">${title}</h5>
+            <p class="text-xs text-slate-300 mt-0.5">${message}</p>
+          </div>
+          <button class="text-slate-400 hover:text-white text-sm" onclick="this.parentElement.remove()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+
+        DOM.toastContainer.appendChild(toast);
+
+        // Trigger transition
+        setTimeout(() => {
+          toast.classList.remove('translate-y-4', 'opacity-0');
+        }, 10);
+
+        // Auto removal after 6 seconds
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 6000);
+      }
+
+      /**
+       * Render Class List UI with Filter Logic
+       */
+      function renderScheduleList(fullRebuild = true) {
+        const searchQuery = DOM.searchInput.value.toLowerCase().trim();
+        const selectedDay = DOM.filterDay.value;
+        const selectedStatus = DOM.filterStatus.value;
+        const now = new Date();
+
+        const filtered = classList.filter(item => {
+          const statusInfo = TimeUtilsModule.getClassStatus(item, now);
+
+          // Search Filter
+          const matchesSearch = item.title.toLowerCase().includes(searchQuery) ||
+                                (item.instructor && item.instructor.toLowerCase().includes(searchQuery)) ||
+                                (item.room && item.room.toLowerCase().includes(searchQuery));
+
+          // Day Filter
+          const matchesDay = selectedDay === 'ALL' || item.day === selectedDay;
+
+          // Status Filter
+          const matchesStatus = selectedStatus === 'ALL' || statusInfo.status === selectedStatus;
+
+          return matchesSearch && matchesDay && matchesStatus;
+        });
+
+        DOM.classCountBadge.textContent = filtered.length;
+
+        if (filtered.length === 0) {
+          DOM.classList.innerHTML = '';
+          DOM.emptyState.classList.remove('hidden');
+          DOM.emptyState.classList.add('flex');
+          return;
+        }
+
+        DOM.emptyState.classList.add('hidden');
+        DOM.emptyState.classList.remove('flex');
+
+        if (fullRebuild) {
+          DOM.classList.innerHTML = filtered.map(item => {
+            const statusInfo = TimeUtilsModule.getClassStatus(item, now);
+            return createClassCardHTML(item, statusInfo);
+          }).join('');
+        } else {
+          // Dynamic badge status updating without DOM destruction
+          filtered.forEach(item => {
+            const cardElement = document.getElementById(`card-${item.id}`);
+            if (cardElement) {
+              const statusInfo = TimeUtilsModule.getClassStatus(item, now);
+              const badgeContainer = cardElement.querySelector('.status-badge-container');
+              if (badgeContainer) {
+                badgeContainer.innerHTML = getStatusBadgeHTML(statusInfo.status);
+              }
+            }
+          });
+        }
+      }
+
+      function createClassCardHTML(item, statusInfo) {
+        return `
+          <div id="card-${item.id}" class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-5 shadow-lg flex flex-col justify-between transition-all duration-200">
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <span class="status-badge-container">
+                  ${getStatusBadgeHTML(statusInfo.status)}
+                </span>
+                <div class="flex items-center gap-1 text-slate-400">
+                  <button onclick="window.app.editClass('${item.id}')" class="p-1.5 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors" title="Edit">
+                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                  </button>
+                  <button onclick="window.app.deleteClass('${item.id}')" class="p-1.5 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors" title="Delete">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <h4 class="text-base font-bold text-slate-100 line-clamp-1">${escapeHTML(item.title)}</h4>
+
+              <div class="mt-3 space-y-2 text-xs text-slate-400">
+                <div class="flex items-center gap-2">
+                  <i class="fa-regular fa-clock w-4 text-indigo-400"></i>
+                  <span>${item.day}s (${format12Hr(item.startTime)} - ${format12Hr(item.endTime)})</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fa-regular fa-user w-4 text-indigo-400"></i>
+                  <span>${escapeHTML(item.instructor || 'Unassigned')}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fa-regular fa-building w-4 text-indigo-400"></i>
+                  <span>${escapeHTML(item.room || 'No location set')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+              <span>Occurrence: Weekly</span>
+              <span class="font-mono text-indigo-400 font-medium">${statusInfo.status === 'IN_PROGRESS' ? 'Ends Soon' : 'Next up'}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function getStatusBadgeHTML(status) {
+        if (status === 'IN_PROGRESS') {
+          return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              IN PROGRESS
+            </span>
+          `;
+        } else if (status === 'UPCOMING') {
+          return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+              UPCOMING
+            </span>
+          `;
+        } else {
+          return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400">
+              COMPLETED
+            </span>
+          `;
+        }
+      }
+
+      /**
+       * Modal & Event Listeners Logic
+       */
+      function setupEventListeners() {
+        DOM.btnOpenAddModal.addEventListener('click', () => openModal());
+        DOM.btnCloseModal.addEventListener('click', closeModal);
+        DOM.btnCancelModal.addEventListener('click', closeModal);
+
+        DOM.classModal.addEventListener('click', (e) => {
+          if (e.target === DOM.classModal) closeModal();
+        });
+
+        DOM.classForm.addEventListener('submit', handleFormSubmit);
+
+        DOM.searchInput.addEventListener('input', () => renderScheduleList());
+        DOM.filterDay.addEventListener('change', () => renderScheduleList());
+        DOM.filterStatus.addEventListener('change', () => renderScheduleList());
+
+        DOM.btnResetFilters.addEventListener('click', () => {
+          DOM.searchInput.value = '';
+          DOM.filterDay.value = 'ALL';
+          DOM.filterStatus.value = 'ALL';
+          renderScheduleList();
+        });
+      }
+
+      function openModal(editId = null) {
+        DOM.classForm.reset();
+        DOM.formClassId.value = '';
+
+        if (editId) {
+          const item = classList.find(c => c.id === editId);
+          if (item) {
+            DOM.formClassId.value = item.id;
+            DOM.formTitle.value = item.title;
+            DOM.formInstructor.value = item.instructor || '';
+            DOM.formRoom.value = item.room || '';
+            DOM.formDay.value = item.day;
+            DOM.formStartTime.value = item.startTime;
+            DOM.formEndTime.value = item.endTime;
+            DOM.modalTitle.querySelector('span').textContent = 'Edit Class Schedule';
+          }
+        } else {
+          DOM.modalTitle.querySelector('span').textContent = 'Add New Class';
+        }
+
+        DOM.classModal.classList.remove('opacity-0', 'pointer-events-none');
+        DOM.modalBox.classList.remove('scale-95');
+        DOM.modalBox.classList.add('scale-100');
+      }
+
+      function closeModal() {
+        DOM.modalBox.classList.remove('scale-100');
+        DOM.modalBox.classList.add('scale-95');
+        DOM.classModal.classList.add('opacity-0', 'pointer-events-none');
+      }
+
+      function handleFormSubmit(e) {
+        e.preventDefault();
+
+        const id = DOM.formClassId.value || String(Date.now());
+        const newClass = {
+          id,
+          title: DOM.formTitle.value.trim(),
+          instructor: DOM.formInstructor.value.trim(),
+          room: DOM.formRoom.value.trim(),
+          day: DOM.formDay.value,
+          startTime: DOM.formStartTime.value,
+          endTime: DOM.formEndTime.value
+        };
+
+        const existingIndex = classList.findIndex(c => c.id === id);
+        if (existingIndex > -1) {
+          classList[existingIndex] = newClass;
+          triggerToastNotification('Schedule Updated', `Updated settings for "${newClass.title}".`);
+        } else {
+          classList.push(newClass);
+          triggerToastNotification('Class Added', `"${newClass.title}" added to schedule.`);
+        }
+
+        StorageModule.saveClasses(classList);
+        scheduleNotifications();
+        renderScheduleList();
+        closeModal();
+      }
+
+      function editClass(id) {
+        openModal(id);
+      }
+
+      function deleteClass(id) {
+        const item = classList.find(c => c.id === id);
+        if (item && confirm(`Are you sure you want to delete "${item.title}"?`)) {
+          classList = classList.filter(c => c.id !== id);
+          StorageModule.saveClasses(classList);
+          scheduleNotifications();
+          renderScheduleList();
+          triggerToastNotification('Class Removed', `Deleted "${item.title}" from schedule.`);
+        }
+      }
+
+      // Helper Utility Functions
+      function format12Hr(time24) {
+        if (!time24) return '';
+        const [h, m] = time24.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+      }
+
+      function escapeHTML(str) {
+        return (str || '').replace(/[&<>'"]/g, 
+          tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+      }
+
+      return {
+        init,
+        editClass,
+        deleteClass
+      };
+    })();
+
+    // Initialize application on window load
+    window.addEventListener('DOMContentLoaded', () => {
+      AppManager.init();
+      // Expose handlers globally for dynamic HTML inline calls
+      window.app = AppManager;
+    });
+  </script>
+</body>
+</html>
